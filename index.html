@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAYONNE! — Logiciel de jauges — EbWebs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --vert: #334F4B;
+    --vert-clair: #CEE6D6;
+    --rouge: #E94A3D;
+    --bleu: #003A5D;
+    --scout: #445AA5;
+    --bg: #0a1a14;
+    --card: rgba(51,79,75,0.15);
+    --border: rgba(206,230,214,0.12);
+  }
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--vert-clair);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    overflow-x: hidden;
+    cursor: none;
+  }
+
+  /* CURSEUR CUSTOM */
+  .cursor {
+    position: fixed; width: 12px; height: 12px;
+    background: var(--rouge); border-radius: 50%;
+    pointer-events: none; z-index: 9999;
+    transform: translate(-50%, -50%);
+    transition: transform 0.1s, width 0.2s, height 0.2s, background 0.2s;
+    mix-blend-mode: difference;
+  }
+  .cursor-ring {
+    position: fixed; width: 36px; height: 36px;
+    border: 1.5px solid var(--vert-clair); border-radius: 50%;
+    pointer-events: none; z-index: 9998;
+    transform: translate(-50%, -50%);
+    transition: transform 0.18s ease, width 0.3s, height 0.3s;
+    opacity: 0.5;
+  }
+
+  /* GRAIN */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 1000;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    opacity: 0.35;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 500;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 48px;
+    background: linear-gradient(to bottom, rgba(10,26,20,0.95) 0%, transparent 100%);
+  }
+  .nav-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px; letter-spacing: 4px; color: var(--vert-clair);
+  }
+  .nav-logo span { color: var(--rouge); }
+  .nav-links { display: flex; gap: 32px; }
+  .nav-links a {
+    font-size: 12px; letter-spacing: 2px; text-transform: uppercase;
+    color: rgba(206,230,214,0.5); text-decoration: none;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--vert-clair); }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh;
+    display: flex; flex-direction: column; justify-content: flex-end;
+    padding: 0 48px 80px;
+    position: relative; overflow: hidden;
+  }
+
+  .hero-bg {
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 80% 60% at 70% 30%, rgba(51,79,75,0.35) 0%, transparent 70%),
+                radial-gradient(ellipse 40% 40% at 20% 80%, rgba(68,90,165,0.2) 0%, transparent 60%);
+  }
+
+  /* Grille décorative */
+  .hero-grid {
+    position: absolute; inset: 0; opacity: 0.06;
+    background-image:
+      linear-gradient(var(--vert-clair) 1px, transparent 1px),
+      linear-gradient(90deg, var(--vert-clair) 1px, transparent 1px);
+    background-size: 60px 60px;
+    mask-image: linear-gradient(to bottom, transparent 0%, black 30%, black 70%, transparent 100%);
+  }
+
+  /* Titre flottant décoratif */
+  .hero-deco {
+    position: absolute; top: 18%; right: -2%;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(120px, 18vw, 260px);
+    color: transparent;
+    -webkit-text-stroke: 1px rgba(206,230,214,0.06);
+    letter-spacing: -4px; line-height: 1;
+    user-select: none; pointer-events: none;
+    animation: floatDeco 8s ease-in-out infinite;
+  }
+  @keyframes floatDeco {
+    0%,100% { transform: translateY(0) rotate(-2deg); }
+    50% { transform: translateY(-20px) rotate(-2deg); }
+  }
+
+  .hero-tag {
+    font-size: 11px; letter-spacing: 4px; text-transform: uppercase;
+    color: var(--rouge); margin-bottom: 20px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .hero-tag::before {
+    content: ''; width: 32px; height: 1px; background: var(--rouge);
+  }
+
+  .hero-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(72px, 11vw, 160px);
+    line-height: 0.92; letter-spacing: 2px;
+    color: var(--vert-clair);
+    text-shadow: 0 0 80px rgba(206,230,214,0.1);
+    position: relative; z-index: 1;
+  }
+  .hero-title .excl { color: var(--rouge); }
+  .hero-title .sub {
+    display: block; font-size: clamp(18px, 2.5vw, 36px);
+    letter-spacing: 8px; color: rgba(206,230,214,0.4);
+    font-family: 'DM Sans', sans-serif; font-weight: 300;
+    margin-top: 8px;
+  }
+
+  .hero-desc {
+    max-width: 480px; font-size: 16px; line-height: 1.7;
+    color: rgba(206,230,214,0.55); margin-top: 32px;
+    position: relative; z-index: 1;
+  }
+
+  .hero-cta {
+    display: inline-flex; align-items: center; gap: 12px;
+    margin-top: 40px; position: relative; z-index: 1;
+    font-size: 12px; letter-spacing: 3px; text-transform: uppercase;
+    color: var(--vert-clair); text-decoration: none;
+    border-bottom: 1px solid rgba(206,230,214,0.3); padding-bottom: 4px;
+    transition: border-color 0.2s, gap 0.2s;
+  }
+  .hero-cta:hover { border-color: var(--vert-clair); gap: 20px; }
+  .hero-cta::after { content: '→'; font-size: 16px; }
+
+  /* SCROLL INDICATOR */
+  .scroll-ind {
+    position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    opacity: 0.3; animation: scrollBounce 2s ease-in-out infinite;
+  }
+  .scroll-ind span { font-size: 9px; letter-spacing: 3px; text-transform: uppercase; }
+  .scroll-ind::after { content: ''; width: 1px; height: 40px; background: var(--vert-clair); }
+  @keyframes scrollBounce { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(8px)} }
+
+  /* SECTIONS */
+  section { padding: 120px 48px; position: relative; }
+
+  .section-label {
+    font-size: 10px; letter-spacing: 4px; text-transform: uppercase;
+    color: var(--rouge); margin-bottom: 56px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .section-label::before { content: ''; width: 24px; height: 1px; background: var(--rouge); }
+
+  /* FONCTIONNEMENT */
+  .how-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 2px; max-width: 1100px;
+  }
+
+  .how-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 48px 40px;
+    position: relative; overflow: hidden;
+    transition: background 0.3s;
+  }
+  .how-card:hover { background: rgba(51,79,75,0.25); }
+  .how-card::before {
+    content: attr(data-num);
+    position: absolute; top: -10px; right: 24px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 120px; color: rgba(206,230,214,0.04);
+    line-height: 1; pointer-events: none;
+  }
+
+  .how-card-icon {
+    width: 48px; height: 3px; background: var(--rouge);
+    margin-bottom: 28px;
+  }
+  .how-card h3 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px; letter-spacing: 2px; color: var(--vert-clair);
+    margin-bottom: 16px;
+  }
+  .how-card p {
+    font-size: 14px; line-height: 1.8; color: rgba(206,230,214,0.5);
+  }
+  .how-card p strong { color: var(--vert-clair); font-weight: 600; }
+
+  /* SCHEMA VISUEL */
+  .schema {
+    max-width: 900px; margin: 80px auto 0;
+    display: flex; align-items: center; gap: 0;
+  }
+  .schema-box {
+    flex: 1; background: var(--card); border: 1px solid var(--border);
+    padding: 28px 24px; text-align: center; position: relative;
+  }
+  .schema-box .s-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px; letter-spacing: 2px; color: var(--vert-clair);
+    margin-bottom: 8px;
+  }
+  .schema-box .s-desc { font-size: 11px; color: rgba(206,230,214,0.4); line-height: 1.5; }
+  .schema-box.highlight { background: rgba(233,74,61,0.1); border-color: rgba(233,74,61,0.3); }
+  .schema-arrow {
+    width: 48px; flex-shrink: 0;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 2px; color: rgba(206,230,214,0.25); font-size: 18px;
+  }
+  .schema-arrow span { font-size: 9px; letter-spacing: 1px; color: rgba(206,230,214,0.2); }
+
+  /* FEATURES */
+  .features-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 1px; max-width: 1100px;
+  }
+  .feat {
+    padding: 40px 32px; border: 1px solid var(--border);
+    transition: background 0.3s, transform 0.3s;
+    position: relative;
+  }
+  .feat:hover { background: var(--card); transform: translateY(-4px); }
+  .feat-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 13px; letter-spacing: 3px; color: var(--rouge);
+    margin-bottom: 20px;
+  }
+  .feat h4 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px; letter-spacing: 1px; color: var(--vert-clair);
+    margin-bottom: 12px;
+  }
+  .feat p { font-size: 13px; line-height: 1.7; color: rgba(206,230,214,0.45); }
+
+  /* BARRE DEMO */
+  .demo-section {
+    background: rgba(51,79,75,0.08);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  .demo-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(36px, 5vw, 64px); letter-spacing: 3px;
+    color: var(--vert-clair); margin-bottom: 60px;
+  }
+  .demo-title span { color: var(--rouge); }
+
+  .gauge-demo {
+    max-width: 900px; margin-bottom: 48px;
+  }
+  .gauge-demo-label {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 10px;
+    font-size: 12px; letter-spacing: 2px; text-transform: uppercase;
+    color: rgba(206,230,214,0.4);
+  }
+  .gauge-demo-label span { font-size: 24px; font-weight: 600; color: var(--vert-clair); font-family: 'Bebas Neue'; letter-spacing: 1px; }
+  .gauge-track {
+    height: 48px; background: rgba(0,0,0,0.4);
+    border: 1px solid var(--border); border-radius: 4px;
+    overflow: hidden; position: relative;
+  }
+  .gauge-fill {
+    height: 100%; border-radius: 4px;
+    background: linear-gradient(90deg, var(--vert) 0%, var(--vert-clair) 100%);
+    position: relative; transition: width 1s cubic-bezier(0.4,0,0.2,1);
+  }
+  .gauge-fill::after {
+    content: ''; position: absolute; right: 0; top: 0; bottom: 0;
+    width: 3px; background: rgba(255,255,255,0.8);
+    box-shadow: 0 0 12px #fff;
+  }
+  .gauge-fill-sound {
+    background: linear-gradient(90deg, var(--scout) 0%, var(--rouge) 100%);
+  }
+
+  /* EBWEBS */
+  .ebwebs-section { text-align: center; }
+  .ebwebs-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(48px, 8vw, 110px); letter-spacing: 6px;
+    color: transparent;
+    -webkit-text-stroke: 1px rgba(206,230,214,0.3);
+    margin-bottom: 8px; transition: -webkit-text-stroke 0.4s;
+  }
+  .ebwebs-logo:hover { -webkit-text-stroke-color: var(--vert-clair); }
+  .ebwebs-sub {
+    font-size: 12px; letter-spacing: 4px; text-transform: uppercase;
+    color: rgba(206,230,214,0.3); margin-bottom: 48px;
+  }
+  .ebwebs-desc {
+    max-width: 520px; margin: 0 auto 48px;
+    font-size: 15px; line-height: 1.8; color: rgba(206,230,214,0.45);
+  }
+  .contact-pill {
+    display: inline-flex; align-items: center; gap: 10px;
+    border: 1px solid var(--border); border-radius: 100px;
+    padding: 12px 28px; font-size: 13px; letter-spacing: 1px;
+    color: rgba(206,230,214,0.6); text-decoration: none;
+    transition: border-color 0.2s, color 0.2s, background 0.2s;
+  }
+  .contact-pill:hover {
+    border-color: var(--vert-clair); color: var(--vert-clair);
+    background: rgba(206,230,214,0.05);
+  }
+  .contact-pill::before { content: '→'; color: var(--rouge); }
+
+  /* FOOTER */
+  footer {
+    padding: 40px 48px;
+    border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 11px; color: rgba(206,230,214,0.2); letter-spacing: 1px;
+  }
+  footer a { color: rgba(206,230,214,0.3); text-decoration: none; }
+
+  /* DIVIDER */
+  .divider {
+    width: 100%; height: 1px; background: var(--border);
+  }
+
+  /* ANIMATIONS SCROLL */
+  .reveal {
+    opacity: 0; transform: translateY(30px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+  .reveal-delay-1 { transition-delay: 0.1s; }
+  .reveal-delay-2 { transition-delay: 0.2s; }
+  .reveal-delay-3 { transition-delay: 0.3s; }
+  .reveal-delay-4 { transition-delay: 0.4s; }
+  .reveal-delay-5 { transition-delay: 0.5s; }
+
+  /* TICKER */
+  .ticker {
+    overflow: hidden; border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 0; background: rgba(51,79,75,0.06);
+  }
+  .ticker-inner {
+    display: flex; gap: 0;
+    animation: tickerMove 20s linear infinite;
+    white-space: nowrap;
+  }
+  .ticker-item {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 14px; letter-spacing: 4px; text-transform: uppercase;
+    color: rgba(206,230,214,0.2); padding: 0 40px;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .ticker-item::after { content: '✦'; color: var(--rouge); font-size: 10px; }
+  @keyframes tickerMove { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+
+  @media (max-width: 768px) {
+    nav { padding: 16px 24px; }
+    section { padding: 80px 24px; }
+    .hero { padding: 0 24px 60px; }
+    .how-grid, .features-grid { grid-template-columns: 1fr; }
+    .schema { flex-direction: column; }
+    .schema-arrow { transform: rotate(90deg); }
+    footer { flex-direction: column; gap: 12px; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">Eb<span>W</span>ebs</div>
+  <div class="nav-links">
+    <a href="#fonctionnement">Comment ça marche</a>
+    <a href="#fonctionnalites">Fonctionnalités</a>
+    <a href="#ebwebs">EbWebs</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-grid"></div>
+  <div class="hero-deco">RAYONNE</div>
+
+  <div class="hero-tag reveal">EbWebs — Les 2 Loire 2026</div>
+  <h1 class="hero-title reveal reveal-delay-1">
+    RAYONNE<span class="excl">!</span>
+    <span class="sub">1 — 2 — 3 MAI 2026</span>
+  </h1>
+  <p class="hero-desc reveal reveal-delay-2">
+    Un logiciel de jauges en temps réel pour événements scouts. Le son de la salle fait avancer la construction, les bonus enflamment l'ambiance, tout projeté via OBS.
+  </p>
+  <a href="#fonctionnement" class="hero-cta reveal reveal-delay-3">Découvrir le projet</a>
+
+  <div class="scroll-ind"><span>Défiler</span></div>
+</section>
+
+<!-- TICKER -->
+<div class="ticker">
+  <div class="ticker-inner">
+    <div class="ticker-item">Jauge construction</div>
+    <div class="ticker-item">Jauge sonore</div>
+    <div class="ticker-item">Bonus x5</div>
+    <div class="ticker-item">Projection OBS</div>
+    <div class="ticker-item">Message live</div>
+    <div class="ticker-item">Animation finale</div>
+    <div class="ticker-item">Les 2 Loire</div>
+    <div class="ticker-item">EbWebs 2026</div>
+    <!-- repeat -->
+    <div class="ticker-item">Jauge construction</div>
+    <div class="ticker-item">Jauge sonore</div>
+    <div class="ticker-item">Bonus x5</div>
+    <div class="ticker-item">Projection OBS</div>
+    <div class="ticker-item">Message live</div>
+    <div class="ticker-item">Animation finale</div>
+    <div class="ticker-item">Les 2 Loire</div>
+    <div class="ticker-item">EbWebs 2026</div>
+  </div>
+</div>
+
+<!-- FONCTIONNEMENT -->
+<section id="fonctionnement">
+  <div class="section-label reveal">Comment ça marche</div>
+
+  <div class="how-grid">
+    <div class="how-card reveal reveal-delay-1" data-num="01">
+      <div class="how-card-icon"></div>
+      <h3>Le son pilote tout</h3>
+      <p>Le logiciel capte le niveau sonore de la salle en temps réel. <strong>Plus les scouts chantent et crient, plus la jauge monte.</strong> Le score interne va de 0 à 10 000 points, affiché en 0–100% pour le public.</p>
+    </div>
+    <div class="how-card reveal reveal-delay-2" data-num="02">
+      <div class="how-card-icon"></div>
+      <h3>Deux fenêtres distinctes</h3>
+      <p>Une <strong>fenêtre OBS</strong> en 16:9 projetée sur grand écran avec les jauges et le fond vidéo. Une <strong>fenêtre contrôle</strong> cachée du public pour piloter tout en direct.</p>
+    </div>
+    <div class="how-card reveal reveal-delay-3" data-num="03">
+      <div class="how-card-icon"></div>
+      <h3>Images personnalisées</h3>
+      <p>Chaque jauge accepte <strong>une image de fond personnalisée</strong> qui se dévoile progressivement — de gauche à droite pour la construction, de bas en haut pour le son.</p>
+    </div>
+    <div class="how-card reveal reveal-delay-4" data-num="04">
+      <div class="how-card-icon"></div>
+      <h3>Vidéos de fond dynamiques</h3>
+      <p>Jusqu'à 6 vidéos en boucle se succèdent automatiquement selon le pourcentage. <strong>0–20%, 20–40%… jusqu'à la vidéo finale</strong> qui se déclenche à 100%.</p>
+    </div>
+  </div>
+
+  <!-- Schéma flux -->
+  <div class="schema reveal" style="margin-top:72px;">
+    <div class="schema-box">
+      <div class="s-title">Micro / Table son</div>
+      <div class="s-desc">Capture audio<br>en temps réel</div>
+    </div>
+    <div class="schema-arrow">→<span>dB</span></div>
+    <div class="schema-box highlight">
+      <div class="s-title">Score 0–10 000</div>
+      <div class="s-desc">Accumulation sur<br>fenêtres de 5 sec</div>
+    </div>
+    <div class="schema-arrow">→<span>%</span></div>
+    <div class="schema-box">
+      <div class="s-title">Jauges OBS</div>
+      <div class="s-desc">Affichage public<br>0–100%</div>
+    </div>
+    <div class="schema-arrow">→<span>live</span></div>
+    <div class="schema-box">
+      <div class="s-title">Vidéo + Effets</div>
+      <div class="s-desc">Fond auto<br>Bonus / Final</div>
+    </div>
+  </div>
+</section>
+
+<!-- DEMO JAUGES -->
+<section class="demo-section">
+  <div class="section-label reveal">Aperçu des jauges</div>
+  <div class="demo-title reveal">JAUGES <span>EN DIRECT</span></div>
+
+  <div class="gauge-demo reveal">
+    <div class="gauge-demo-label">Construction <span id="build-val">73%</span></div>
+    <div class="gauge-track">
+      <div class="gauge-fill" id="build-bar" style="width:73%"></div>
+    </div>
+  </div>
+
+  <div class="gauge-demo reveal reveal-delay-1">
+    <div class="gauge-demo-label">Niveau sonore <span id="sound-val">45%</span></div>
+    <div class="gauge-track">
+      <div class="gauge-fill gauge-fill-sound" id="sound-bar" style="width:45%"></div>
+    </div>
+  </div>
+
+  <p style="font-size:12px;color:rgba(206,230,214,0.25);margin-top:24px;letter-spacing:1px;">
+    Les jauges ci-dessus sont animées pour illustration — les vraies sont pilotées par le son en live.
+  </p>
+</section>
+
+<!-- FONCTIONNALITES -->
+<section id="fonctionnalites">
+  <div class="section-label reveal">Fonctionnalités</div>
+
+  <div class="features-grid">
+    <div class="feat reveal reveal-delay-1">
+      <div class="feat-num">01 — Audio</div>
+      <h4>Détection sonore</h4>
+      <p>Choix de la source audio, réglage de sensibilité, accumulation sur 5 secondes pour éviter les pics parasites.</p>
+    </div>
+    <div class="feat reveal reveal-delay-2">
+      <div class="feat-num">02 — Bonus</div>
+      <h4>Système de bonus</h4>
+      <p>Multiplicateur x5 (paramétrable) pendant une durée choisie. Mode visible avec animations, ou discret sans effet visuel.</p>
+    </div>
+    <div class="feat reveal reveal-delay-3">
+      <div class="feat-num">03 — Messages</div>
+      <h4>Push message live</h4>
+      <p>Envoyer un texte qui s'affiche en grand sur OBS pendant X secondes. Idéal pour annoncer un résultat ou féliciter une équipe.</p>
+    </div>
+    <div class="feat reveal reveal-delay-1">
+      <div class="feat-num">04 — Contrôle</div>
+      <h4>Pause & valeur manuelle</h4>
+      <p>Mettre en pause le comptage audio à tout moment. Fixer manuellement les points ou le pourcentage avec un slider.</p>
+    </div>
+    <div class="feat reveal reveal-delay-2">
+      <div class="feat-num">05 — Affichage</div>
+      <h4>Options OBS</h4>
+      <p>Toggle pourcentage, affichage de l'heure en direct, animation finale automatique à 100% ou déclenchée manuellement.</p>
+    </div>
+    <div class="feat reveal reveal-delay-3">
+      <div class="feat-num">06 — Images</div>
+      <h4>Jauges personnalisées</h4>
+      <p>Importer ses propres images pour les jauges construction et son. Révélation progressive par masque CSS.</p>
+    </div>
+  </div>
+</section>
+
+<!-- EBWEBS -->
+<section id="ebwebs" class="ebwebs-section">
+  <div class="section-label reveal" style="justify-content:center;">À propos</div>
+  <div class="ebwebs-logo reveal">EbWebs</div>
+  <div class="ebwebs-sub reveal">Développement web & outils sur mesure</div>
+  <p class="ebwebs-desc reveal">
+    EbWebs crée des outils numériques sur mesure pour des événements, associations et projets créatifs. RAYONNE! a été développé spécifiquement pour Les 2 Loire, événement scout des 1-2-3 mai 2026.
+  </p>
+  <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;" class="reveal">
+    <a href="https://ebwebs.org" class="contact-pill">ebwebs.org</a>
+    <a href="mailto:contact@ebwebs.org" class="contact-pill">contact@ebwebs.org</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div>© EbWebs 2026 — By Ethan MORGADO</div>
+  <div><a href="mailto:contact@ebwebs.org">contact@ebwebs.org</a> — <a href="https://ebwebs.org">ebwebs.org</a></div>
+</footer>
+
+<script>
+  // Curseur custom
+  const cursor = document.getElementById('cursor');
+  const ring = document.getElementById('cursorRing');
+  let mx = 0, my = 0, rx = 0, ry = 0;
+  document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+  function animCursor() {
+    cursor.style.left = mx + 'px'; cursor.style.top = my + 'px';
+    rx += (mx - rx) * 0.12; ry += (my - ry) * 0.12;
+    ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
+    requestAnimationFrame(animCursor);
+  }
+  animCursor();
+
+  // Scroll reveal
+  const reveals = document.querySelectorAll('.reveal');
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.1 });
+  reveals.forEach(el => io.observe(el));
+
+  // Hero reveal immédiat
+  document.querySelectorAll('.hero .reveal').forEach((el, i) => {
+    setTimeout(() => el.classList.add('visible'), 200 + i * 150);
+  });
+
+  // Demo gauges animation
+  let buildPct = 73, soundPct = 45;
+  let buildDir = 1, soundDir = 1;
+  function animGauges() {
+    buildPct += buildDir * (0.3 + Math.random() * 0.4);
+    soundPct += soundDir * (0.8 + Math.random() * 1.2);
+    if (buildPct >= 100) { buildPct = 100; buildDir = -1; }
+    if (buildPct <= 0)   { buildPct = 0;   buildDir = 1;  }
+    if (soundPct >= 100) { soundPct = 100; soundDir = -1; }
+    if (soundPct <= 0)   { soundPct = 0;   soundDir = 1;  }
+    const bp = Math.round(buildPct);
+    const sp = Math.round(soundPct);
+    document.getElementById('build-bar').style.width = bp + '%';
+    document.getElementById('sound-bar').style.width = sp + '%';
+    document.getElementById('build-val').textContent = bp + '%';
+    document.getElementById('sound-val').textContent = sp + '%';
+    setTimeout(animGauges, 80);
+  }
+  animGauges();
+</script>
+</body>
+</html>
